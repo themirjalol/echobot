@@ -1,15 +1,15 @@
-# bot.py
+# echo.py
 import asyncio
-from aiogram import Bot, Dispatcher
+from aiogram import Bot, Dispatcher, F
 from aiogram.client.default import DefaultBotProperties
-from aiogram.filters import Command, Text
+from aiogram.filters import Command
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 
 # --- TOKEN ni shu yerga qo'ying ---
 TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
 # ------------------------------------
 
-# Botni yaratishda DefaultBotProperties orqali parse_mode o'rnatamiz
+# Botni yaratamiz (parse_mode = HTML)
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
 dp = Dispatcher()
 
@@ -21,22 +21,20 @@ async def cmd_start(message: Message):
         [InlineKeyboardButton(text="ℹ️ Foydalanuvchi haqida", callback_data="whoami")]
     ])
     await message.answer(
-        "<b>Salom!</b>\n\nMen oddiy Telegram botman. Quyidagi tugmalardan birini bosing yoki menga xabar jo'nating — men echo (takrorlash) qilaman.",
+        "<b>Salom!</b>\n\nMen oddiy Telegram botman. Quyidagi tugmalardan birini bosing yoki menga xabar yuboring — men echo (takrorlash) qilaman.",
         reply_markup=keyboard
     )
 
 # Oddiy echo (foydalanuvchi kiritgan matnni qaytaradi)
 @dp.message()
 async def echo(message: Message):
-    # Botga yuborilgan matnni oddiy qilib qaytaradi
-    # Agar stiker, rasm va boshqa turdagi xabar bo'lsa, shunchaki qisqacha javob beradi
     if message.text:
         await message.answer(f"Siz yozdingiz: {message.text}")
     else:
         await message.answer("Men hozir faqat matnli xabarlarni takrorlay olaman :)")
 
 # Inline tugmalar uchun callback handler
-@dp.callback_query(Text(equals=["say_hi", "whoami"]))
+@dp.callback_query(F.data.in_(["say_hi", "whoami"]))
 async def on_button_click(callback: CallbackQuery):
     data = callback.data
     if data == "say_hi":
@@ -44,22 +42,20 @@ async def on_button_click(callback: CallbackQuery):
     elif data == "whoami":
         u = callback.from_user
         await callback.message.answer(f"👤 Siz: <b>{u.full_name}</b>\nID: <code>{u.id}</code>")
-    # callbackni acknowledge qilish (tugma bosilgani ko'rinadi)
     await callback.answer()
 
-# Xatoliklar (opsional): Exceptionlar haqida terminalga chiqarish
+# Xizmat funksiyalari
 async def on_startup():
-    print("Bot ishga tushdi...")
+    print("✅ Bot ishga tushdi...")
 
 async def on_shutdown():
     await bot.session.close()
-    print("Bot to'xtatildi, sessiya yopildi.")
+    print("❌ Bot to'xtatildi, sessiya yopildi.")
 
-# Asosiy funksiyani ishga tushuramiz
+# Asosiy funksiya
 async def main():
     try:
         await on_startup()
-        # start_polling Dispatcher bilan Bot obyektini uzatamiz
         await dp.start_polling(bot)
     finally:
         await on_shutdown()
